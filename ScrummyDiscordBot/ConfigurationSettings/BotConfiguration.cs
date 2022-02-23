@@ -1,4 +1,4 @@
-﻿namespace ChattyMeDiscordBot.ConfigurationSettings;
+﻿namespace ScrummyDiscordBot.ConfigurationSettings;
 
 public class BotConfiguration
 {

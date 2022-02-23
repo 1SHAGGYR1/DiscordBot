@@ -1,11 +1,10 @@
-﻿using System.Reflection;
-using ChattyMeDiscordBot.ConfigurationSettings;
-using Discord;
+﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
+using ScrummyDiscordBot.ConfigurationSettings;
 
-namespace ChattyMeDiscordBot;
+namespace ScrummyDiscordBot;
 
 public class Bot : IDisposable
 {
@@ -41,44 +40,35 @@ public class Bot : IDisposable
 
     public async Task InitAsync()
     {
-        await InitCommands();
-
+        _client.Ready += SayHello();
+        
         await _client.LoginAsync(TokenType.Bot, _configuration.Token);
         await _client.StartAsync();
     }
 
-    private async Task InitCommands()
+    private Func<Task> SayHello()
     {
-        _client.MessageReceived += HandleCommandAsync;
-        await _commandService.AddModulesAsync(Assembly.GetEntryAssembly(), _serviceProvider);
-    }
-
-    private async Task HandleCommandAsync(SocketMessage arg)
-    {
-        //Ignore system messages.
-        if (arg is not SocketUserMessage message)
+        return () =>
         {
-            return;
-        }
-
-        // Ignore bots
-        if (message.Author.Id == _client.CurrentUser.Id || message.Author.IsBot)
-        {
-            return;
-        }
-
-        var commandStartPosition = 0;
-        if (message.HasCharPrefix('~', ref commandStartPosition) || message.HasMentionPrefix(_client.CurrentUser, ref commandStartPosition))
-        {
-            var context = new SocketCommandContext(_client, message);
-
-            var result = await _commandService.ExecuteAsync(context, commandStartPosition, _serviceProvider);
-
-            if (!result.IsSuccess && result.Error != CommandError.UnknownCommand)
+            var tasks = new List<Task>();
+            foreach (var guild in _client.Guilds)
             {
-                await message.Channel.SendMessageAsync(result.ErrorReason);
+                if (guild.Channels.FirstOrDefault(channel => channel.Name == "bots-logger") is ITextChannel textChannel)
+                {
+                    var embed = new EmbedBuilder
+                    {
+                        Title = "Hello, felas!"
+                    };
+                    embed.WithAuthor(new EmbedAuthorBuilder()
+                            .WithName("Scrummy"))
+                        .WithColor(Color.Magenta)
+                        .WithCurrentTimestamp();
+                    tasks.Add(textChannel.SendMessageAsync("I started working!", embed: embed.Build()));
+                }
             }
-        }
+
+            return Task.WhenAll(tasks);
+        };
     }
 
     public void Dispose()
@@ -86,7 +76,6 @@ public class Bot : IDisposable
         //TODO: implement IDisposable normally
         _client.Log -= Log;
         _commandService.Log -= Log;
-        _client.MessageReceived -= HandleCommandAsync;
         _client.Dispose();
     }
 }
