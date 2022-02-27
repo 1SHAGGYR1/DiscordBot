@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ScrummyDiscordBot.ConfigurationSettings;
+using ScrummyDiscordBot.SlashCommands.Factories;
 
 namespace ScrummyDiscordBot;
 
@@ -19,6 +20,7 @@ class Program
         {
             var configurationRoot = context.Configuration;
             services.Configure<BotConfiguration>(configurationRoot.GetSection(nameof(BotConfiguration)));
+            services.AddSingleton<TopLevelCommandHandlerFactory>();
             services.AddSingleton<Bot>();
         }).Build();
     }
